@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Blamequark</title>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+        console.log("Blamequark v0.1.2")
+        let quickload = {
+            "redirect": async function (path, isPop = false) {
+                if (!isPop) history.pushState(path, document.title, path);
+
+            },
+            "setupPage": async function (path) {
+                var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+                if (cache == null || cache[path] == undefined) {
+                    let response = await fetch(path, {
+                        method: 'GET',
+                        headers: {
+                            'Range': 'body'
+                        }
+                    });
+                    let body = await response.text();
+                    document.body.innerHTML = body;
+                    quickload.cache(path, body);
+                } else {
+                    document.body.innerHTML = cache[path];
+                }
+                onload();
+                Array.from(document.scripts).forEach(script => {
+                    eval(script.innerText);
+                })
+            },
+            "cache": async function (path, content) {
+                var cache = window.sessionStorage.getItem("quickloadCache") ? JSON.parse(window.sessionStorage.getItem("quickloadCache")) : {};
+                cache[path] = content;
+                window.sessionStorage.setItem("quickloadCache", JSON.stringify(cache));
+            },
+            "script": document.currentScript || document.scripts[document.scripts.length - 1],
+            "version": "0.1.0"
+        }
+        quickload.script.remove();
+
+        onpopstate = function (e) {
+            if (e.state) {
+                quickload.redirect(e.state, true);
+            }
+        }
+
+        onload = function () {
+            Array.from(document.getElementsByTagName("a")).forEach(elem => {
+                elem.onclick = e => {
+                    e.preventDefault();
+                    quickload.redirect(elem.href);
+                    elem.onclick = e => {
+                        e.preventDefault()
+                    };
+                }
+            })
+
+        }
+
+        function uuid() {
+            return 'xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        let h = 0
+        var emojis = []
+        let ws = null;
+        var SELF = undefined
+        var selectedServer = -1
+        var selectedChannel = -1
+        var lastScrollTop = 0;
+        var scrollLock = true;
+        let attachments = { list: [] }
+        kLINK_DETECTION_REGEX = /(([a-z]+:\/\/)?(([a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|biz|com|cloud|coop|edu|gov|gay|info|int|jobs|mil|museum|name|nato|net|org|pro|travel|local|cat|internal))(:[0-9]{1,5})?(\/[a-z0-9_\-\.~]+)*(\/([a-z0-9_\-\.]*)(\?[a-z0-9+_\-\.%=&amp;]*)?)?(#[a-zA-Z0-9!$&'()*+.=-_~:@/?]*)?)(\s+|$)/gi
+        class Message {
+            constructor(data) {
+                this.raw = data;
+                this.authorId = data.author._id;
+                this.avatarUri = data.author.avatar || data.author.avatarUri
+                this.authorName = data.author.username
+                this.channelId = data.message.channelId;
+                this.content = data.message.content;
+                this.timestamp = data.message.timestamp;
+                this.ua = data.message.ua
+                this.random = h
+                this.attachments = data.message.attachments;
+                this.__v = data.message.__v;
+                this._id = data.message._id;
+                this.edited = data.message.edited
+                this.sendMessage = async function (channelId, content) {
+                    let temp = await fetch(`https://lq.litdevs.org/v1/channel/${channelId}/messages`, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
+                            "Content-Type": "Application/json",
+                            "lq-agent": `Blamequark/0.1.2`
+                        },
+                        body: JSON.stringify({ "content": content })
+                    })
+                    let y = await temp.json()
+                    return y.request.status_code;
+                }
+
+                this.render = async (join) => {
+                    if (this.channelId != selectedChannel) return ""
+                    // this.author = getUser(this.authorId)
+                    let ua;
+                    try {
+                        ua = JSON.parse(this.ua)
+                    } catch (e) {
+                        ua = {}
+                    }
+                    let append = ""
+                    if (this.attachments.length > 0) {
+                        for (index in this.attachments) {
+                            if (["png", "gif", "jpeg", "jpg", "webp"].includes(this.attachments[index].split(".")[this.attachments[index].split(".").length - 1])) append += `<img class="embed" src="${this.attachments[index]}"/><br>`
+                            else if (["mp4", "mov", "mkv"].includes(this.attachments[index].split(".")[this.attachments[index].split(".").length - 1])) append += `<video controls="" class="embed" src="${this.attachments[index]}"></video><br>`
+                            else if (["mp3", "ogg", "wav"].includes(this.attachments[index].split(".")[this.attachments[index].split(".").length - 1])) append += `<audio id="${selectedChannel}"controls="" class="embed" src="${this.attachments[index]}"></audio><br>`
+                            else append += `<div class="embed" onclick="window.open('https://${this.attachments[index].replace("https://", "").replace("http://", "")}')"><a>${this.attachments[index]}</a></div>`
+                        }
+                    }
+                    let content = ''
+                    if (this.edited == true) content += `<small class="edit">(edited)</small>`
+                    var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+                    if (SELF != undefined && this.authorId == SELF._id) append += `<button class="editButton"onclick="editMessage('${this._id}')">edit</button><button class="deleteButton" onclick="deleteMessage('${this._id}')">delete</button>`
+                    let b = this.content.split(" ")
+                    for (index in b) {
+                        if (kLINK_DETECTION_REGEX.test(b[index])) {
+                            let file = b[index]
+                            if (["png", "gif", "jpeg", "jpg", "webp"].includes(file.split(".")[file.split(".").length - 1])) append += `<img class="embed" src="${file}"></img><br>`
+                            else if (["mp4", "mov"].includes(file.split(".")[file.split(".").length - 1])) append += `<video controls="" class="embed" src="${file}"></video><br>`
+                            else if (["mp3", "ogg", "wav", "mkv"].includes(file.split(".")[file.split(".").length - 1])) append += `<audio id="${selectedChannel}" controls="" class="embed" src="${file}"></audio><br>`
+                            else append += `<div class="embed" onclick="window.open('https://${file.replace("https://", "").replace("http://", "")}')"><a>${file}</a></div>`
+
+                        }
+                    }
+                    this.content = this.content.replace("<", "&lt;")
+                    let prepend = ""
+                    for (index in emojis) {
+
+                        if (this.content.includes(`:${emojis[index]}:`)) this.content = this.content.replaceAll(`:${emojis[index]}:`, `<img class="emoji" src="${emojis[index]}.png">`)
+                    }
+                    this.content = this.content.replaceAll("\\n", "<br>")
+                    let smallTextPlus = ""
+                    if (!this.ua.toLowerCase().includes("blamequark") && !this.ua.includes("blame quark")) smallTextPlus = ` via ${this.ua}`
+
+                    if (join == false) return `<div timestamp="${this.timestamp}" edit="${this.__v}"class="message" id ="${this._id}"><img src="${this.avatarUri}"><p class="author">${this.authorName}${this.ua.includes("blamequark") || this.ua.includes("blame quark") ? "✅" : ""}<small>${new Date(this.timestamp).toLocaleString()}${smallTextPlus}</small></p><p class="text">${this.content}${content}</p>${append}</div>`
+                    else return `<div timestamp="${this.timestamp}" edit="${this.__v}"class="message join" id ="${this._id}" ><p class="text">${this.content}${content}</p>${append}</div>`
+                }
+                this.edit = async () => {
+                    let x = document.getElementById(this._id)
+                    x.classList.add("editing")
+                    let y = Array.from(x.children).find(child => child.className == "text")
+                    y.contentEditable = true;
+                    let oldText = y.innerText
+                    y.focus()
+                    y.innerHTML = y.innerHTML.replace(`<small class="edit">(edited)</small>`, "")
+                    y.onkeypress = async (e) => {
+                        if (event.which === 13) {
+                            y.contentEditable = false;
+                            let newtext = y.innerText
+                            y.blur()
+                            y.innerText = newtext;
+                            document.getElementById(this._id).classList.remove("editing")
+                            let x = await fetch(`https://lq.litdevs.org/v1/channel/${this.channelId}/messages/${this._id}`, {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "Application/json",
+                                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                                },
+                                body: JSON.stringify({ "content": y.innerText })
+                            })
+                        }
+                    }
+                    y.onunfocus = function () {
+                        x.classList.remove("editing")
+                    }
+                }
+                this.delete = async () => {
+                    let x = await fetch(`https://lq.litdevs.org/v1/channel/${this.channelId}/messages/${this._id}`, {
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "Application/json",
+                            "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                        },
+                    })
+
+
+                }
+            }
+
+
+        }
+
+
+        class Channel {
+            constructor(data) {
+                this.data = data;
+                this.messages = []
+                this.inactive = false;
+                this.validate = (newMsgList) => {
+                    var input = newMsgList
+
+
+                    const ids = input.map(o => o._id)
+                    const filtered = input.filter(({ _id }, index) => !ids.includes(_id, index + 1))
+
+
+                    filtered.sort((x, y) => {
+                        return x.timestamp - y.timestamp
+                    })
+                    this.messages = filtered;
+                }
+                this.render = async () => {
+                    if (this.inactive) return;
+                    let h = document.querySelector(".messageArea").children
+
+
+                    let children = Array.from(h)
+                    let msgs = Array.from(this.messages)
+                    let done = []
+
+                    let arr = []
+                    for (index in this.messages) {
+                        let join = false;
+                        if (this.messages[index - 1] != undefined && this.messages[index].authorId == this.messages[index - 1].authorId) join = true
+                        arr.push(await this.messages[index].render(join))
+                    }
+
+                    for (index in arr) {
+                        let real;
+                        if (children[index] != undefined) {
+                            real = children[index].outerHTML;
+                        } else {
+                            real = undefined
+                        }
+                        let neww = document.createElement("div")
+                        neww.innerHTML = arr[index];
+
+                        done.push(this.messages[index]._id)
+                        if (document.getElementById(this.messages[index]._id) == undefined) {
+                            let x = document.createElement("div")
+                            x.innerHTML = arr[index];
+                            document.querySelector(".channelArea >.messageArea").appendChild(x.firstChild)
+                        }
+
+                        else if (children[index] != undefined && neww.innerHTML.replace(/(\?)[0-9]{1,10}/g, "").replace(real.replace(/(\?)[0-9]{1,10}/g, ""), "").length > 2) {
+                            if (!real.includes("editing")) document.getElementById(this.messages[index]._id).outerHTML = neww.innerHTML;
+                        }
+                    }
+                    for (index in children) {
+                        if (!done.includes(children[index].id)) { children[index].remove(); }
+                    }
+                    quickload.cache(`channel-html-${selectedChannel}`, document.querySelector(".channelArea >.messageArea").innerHTML)
+                }
+            }
+        }
+
+        function editMessage(id) {
+            let x = currentChannel.messages.find(e => e._id == id)
+            if (x != null) x.edit()
+            else return false;
+        }
+        function deleteMessage(id) {
+            let x = currentChannel.messages.find(e => e._id == id)
+            if (x != null) x.delete()
+            else return false;
+        }
+
+        var currentChannel = new Channel({})
+
+
+
+        async function initial() {
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache != null && cache["https://lq.litdevs.org/v1/user/me"] != undefined) {
+                self = cache["https://lq.litdevs.org/v1/user/me"]
+                document.querySelector(".sidebar > .profile > img").src = cache["https://lq.litdevs.org/v1/user/me"].avatar;
+            }
+
+            if (document.cookie != undefined && document.cookie.split("=")[0] == "access_token") {
+                let temp = await fetch("https://lq.litdevs.org/v1/user/me", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${document.cookie.split("=")[1]} `
+                    }
+                })
+                let y = await temp.json()
+                if (y.request.status_code != 200) //quickload.redirect("/")
+                    quickload.cache("https://lq.litdevs.org/v1/user/me", y.response.jwtData)
+                document.querySelector(".sidebar > .profile > img").src = `${y.response.jwtData.avatar}?${Date.now()}`;
+                SELF = y.response.jwtData
+
+
+
+            } else { quickload.redirect("./") }
+        }
+
+
+
+
+        async function getServers() {
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache != null && cache["https://lq.litdevs.org/v1/quark/me"] != undefined) {
+                if (document.querySelector(".serverListContainer").innerHTML == "") {
+                    document.querySelector(".serverListContainer").innerHTML = ""
+                    cache["https://lq.litdevs.org/v1/quark/me"].forEach(quark => {
+                        document.querySelector(".serverListContainer").innerHTML += `<div id = "${quark._id}" onclick = "selectServer(this)"class="serverContainer" ><div class="tick"></div><div class="server"><img src="${quark.iconUri}"></div></div></div> `
+                    });
+                    if (selectedServer == -1) loadServer(cache["https://lq.litdevs.org/v1/quark/me"][0]._id)
+                }
+            }
+            let temp = await fetch("https://lq.litdevs.org/v1/quark/me", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]} `
+                }
+            })
+            let y = await temp.json()
+            let z = ""
+            for (let i = 0; i < y.response.quarks.length; i++) {
+                z += `<div id = "${y.response.quarks[i]._id}" onclick = "selectServer(this)"class="serverContainer" ><div class="tick"></div><div class="server"><img src="${y.response.quarks[i].iconUri}"></div></div></div> `
+            };
+            if (cache == null || (JSON.stringify(cache["https://lq.litdevs.org/v1/quark/me"]) != JSON.stringify(y.response.quarks))) {
+                document.querySelector(".serverListContainer").innerHTML = z
+            }
+            if (selectedServer == -1) {
+                loadServer(y.response.quarks[0]._id)
+                selectedServer = y.response.quarks[0]._id
+            }
+            quickload.cache("https://lq.litdevs.org/v1/quark/me", y.response.quarks)
+
+
+        }
+
+
+
+
+
+
+
+
+        function selectServer(t) {
+            Array.from(t.parentElement.children).forEach(child => {
+                child.classList.remove("selected")
+            })
+            t.classList.add("selected")
+            let id = t.id
+            selectedServer = id
+            loadServer(id)
+        }
+
+        async function loadServer(quarkId, refresh = true) {
+            if (refresh = true) document.querySelector(".memberList").innerHTML = ""
+
+            if (refresh = true) document.querySelector(".channelArea >.messageArea").innerHTML = ""
+            document.querySelector(".serverPanel >.header>.name").innerHTML = "Loading..."
+
+            document.querySelector(".messageInput").value = ""
+            cached = false;
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+
+            if (cache != null && cache[`https://lq.litdevs.org/v1/quark/${quarkId}`] != undefined) {
+                document.querySelector(".serverPanel >.header>.name").innerText = cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].name
+                document.querySelector(".serverPanel >.header").style.backgroundImage = `url("${cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].iconUri}")`
+                let t = ""
+                for (index in cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels) {
+                    t += `<div class="channel"  onclick="selectChannel(this)"id=${cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels[index]._id} title=${cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels[index].description}><p>${cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels[index].name.replace(" ", "-")}</p></div>`
+                }
+                t += `<div class="channel new"  onclick="newChannel(this)" title="create new channel"><p>new</p></div>`
+                selectedChannel = cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels[0]._id
+
+                if (refresh == true) loadChannel(cache[`https://lq.litdevs.org/v1/quark/${quarkId}`].channels[0]._id)
+                cached = true
+                if (t !== document.querySelector(".serverPanel >.channelContainer").innerHTML) document.querySelector(".serverPanel >.channelContainer").innerHTML = t
+            }
+            let temp = await fetch(`https://lq.litdevs.org/v1/quark/${quarkId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                }
+            })
+            let y = await temp.json()
+            quickload.cache(`https://lq.litdevs.org/v1/quark/${quarkId}`, y.response.quark)
+            loadUsersList()
+
+            if (selectedServer != quarkId) return
+            document.querySelector(".serverPanel >.header>.name").innerText = y.response.quark.name
+            document.querySelector(".serverPanel >.header").style.backgroundImage = `url("${y.response.quark.iconUri}")`
+            let t = ""
+            for (index in y.response.quark.channels) {
+                t += `<div class="channel" onclick="selectChannel(this)" id=${y.response.quark.channels[index]._id} title=${y.response.quark.channels[index].description}><p>${y.response.quark.channels[index].name.replace(" ", "-")}</p></div>`
+            }
+            t += `<div class="channel new"  onclick="newChannel(this)" title="create new channel"><p>new</p></div>`
+
+            if (cached == false) {
+                if (refresh == true) selectedChannel = y.response.quark.channels[0]._id
+                if (refresh == true) loadChannel(y.response.quark.channels[0]._id)
+
+            }
+
+            if (t !== document.querySelector(".serverPanel >.channelContainer").innerHTML) document.querySelector(".serverPanel >.channelContainer").innerHTML = t
+            subscribeQuark(quarkId)
+        }
+        function selectChannel(t) {
+            Array.from(t.parentElement.children).forEach(child => {
+                child.classList.remove("selected")
+            })
+            t.classList.add("selected")
+            let id = t.id
+            selectedChannel = id
+            loadChannel(id)
+        }
+        async function loadChannel(channelID) {
+            currentChannel.inactive = true;
+            currentChannel.messages = []
+            delete currentChannel
+            subscribeChannel(channelID)
+            loadChannelMesages(channelID)
+            document.querySelector(".channelHeader>.name").innerText = "Loading..."
+            document.querySelector(".channelHeader>.desc").innerText = "Loading..."
+            document.querySelector(".channelHeader>.delButton").id = channelID
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}`] != undefined) {
+                currentChannel = new Channel(cache[`https://lq.litdevs.org/v1/channel/${channelID}`])
+                document.querySelector(".channelHeader>.name").innerText = cache[`https://lq.litdevs.org/v1/channel/${channelID}`].name
+                document.querySelector(".channelHeader>.desc").innerText = cache[`https://lq.litdevs.org/v1/channel/${channelID}`].description
+            }
+            let temp = await fetch(`https://lq.litdevs.org/v1/channel/${channelID}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                }
+            })
+            let y = await temp.json()
+            quickload.cache(`https://lq.litdevs.org/v1/channel/${channelID}`, y.response.channel)
+            if (selectedChannel != channelID) return
+            document.querySelector(".channelHeader>.name").innerText = y.response.channel.name
+            document.querySelector(".channelHeader>.desc").innerText = y.response.channel.description
+            currentChannel = new Channel(y.response.channel)
+            h += 1
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            getServers()
+            loadChannelMesages(selectedChannel)
+            initial()
+        }
+
+        async function loadUsersList() {
+            let id = selectedServer
+            let temp = await fetch(`https://lq.litdevs.org/v1/quark/${id}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                }
+            })
+            let y = await temp.json()
+            let list = y.response.quark.members
+            let owners = y.response.quark.owners
+            let html = "<div class='header'>Members</div>"
+            var user = []
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache[`userlistHTML-${id}`] != undefined) document.querySelector(".memberList").innerHTML = cache[`userlistHTML-${id}`]
+
+            for (index in list) {
+                let temp = await fetch(`https://lq.litdevs.org/v1/user/${list[index]}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                    }
+                })
+                let y = await temp.json()
+                quickload.cache(`https://lq.litdevs.org/v1/user/${list[index]}`, y.response.user)
+                usr = y.response.user
+                user.push(usr)
+            }
+            const ids = user.map(o => o._id)
+            const filtered = user.filter(({ _id }, index) => !ids.includes(_id, index + 1))
+            for (index in filtered) {
+                let u = filtered[index]
+                if (owners.includes(u._id)) html = `<div class="user"><img src="${u.avatarUri}"><p>${u.username}</p></div>` + html
+                else html += `<div class="user"><img src="${u.avatarUri}"><p>${u.username}</p></div>`
+            }
+            html = `<div class='header'>Owner</div>` + html
+
+            quickload.cache(`userlistHTML-${id}`, html)
+            let elem = document.createElement("div")
+            elem.innerHTML = html
+            if (id == selectedServer && elem.innerHTML.replace(/(\?)[0-9]{1,10}/g, "") != document.querySelector(".memberList").innerHTML.replace(/(\?)[0-9]{1,10}/g, "")) document.querySelector(".memberList").innerHTML = html
+        }
+
+        async function getUser(id) {
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache != null && cache[`https://lq.litdevs.org/v1/user/${id}`] != undefined) {
+                return cache[`https://lq.litdevs.org/v1/user/${id}`]
+            } else {
+                let temp = await fetch(`https://lq.litdevs.org/v1/user/${id}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                    }
+                })
+                let y = await temp.json()
+                return (y.response.user)
+                quickload.cache(`https://lq.litdevs.org/v1/user/${id}`, y.response.user)
+
+            }
+
+
+        }
+
+        async function loadChannelMesages(channelID, startTimestamp = null) {
+            if (startTimestamp != null) startTimestamp = `?startTimestamp=${startTimestamp}`
+            else startTimestamp = ""
+            if (channelID == -1) return
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            if (cache != null && cache[`channel-html-${channelID}`] != undefined) {
+                document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
+
+            }
+            if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`] != undefined) {
+                if (document.querySelector(".channelArea >.messageArea").innerHTML == "") {
+                    let t = []
+
+                    for (index in cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`]) {
+                        let x = new Message(cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`][index])
+                        t.push(x)
+                    }
+                    currentChannel.validate(t)
+                    await currentChannel.render()
+                }
+
+            } else {
+
+            }
+            let temp = await fetch(`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                }
+            })
+            let y = await temp.json()
+
+            if (selectedChannel != channelID) return
+            let t = []
+            for (index in y.response.messages) {
+                let x = new Message(y.response.messages[index])
+                t.push(x)
+
+            }
+            currentChannel.validate(t)
+
+            if (selectedChannel !== channelID) return
+            if (JSON.stringify(y.response.messages) != JSON.stringify(cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages?startTimestamp=${startTimestamp}`])) {
+
+                quickload.cache(`https://lq.litdevs.org/v1/channel/${channelID}/messages?startTimestamp=${startTimestamp}`, y.response.messages)
+                await currentChannel.render()
+
+            }
+
+
+        }
+        async function handleJoinServer(t) {
+            let p = document.querySelector(".prompt")
+            p.setAttribute("lol", `${!(p.getAttribute("lol") == "true")}`)
+
+
+            document.querySelector(".interactionArea").innerHTML = `<p class="title">Join a Discord Server</p><p class="labelText">Enter invte code</p><input placeholder="litdevs"></input><div onclick="untoggle()"class="x">x</div><button class="join" disabled>join</button></div>`
+            document.querySelector(".interactionArea>input").oninput = async function (e) {
+                let last = e.target.value
+                let temp = await fetch(`https://lq.litdevs.org/v1/quark/invite/${e.target.value}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                    }
+                })
+                let y = await temp.json()
+                if (y.request.status_code == 200) {
+                    document.querySelector(".interactionArea>button").disabled = false;
+                    let validId = last
+                    document.querySelector(".interactionArea>button").onclick = async function () {
+                        let temp = await fetch(`https://lq.litdevs.org/v1/quark/invite/${validId}`, {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                            }
+                        })
+                        let y = await temp.json()
+                        if (y.request.status_code != 200) {
+                            alert("an eror occured and you were not placed in the server")
+                        }
+                        untoggle()
+                        getServers()
+
+                    }
+                } else {
+                    document.querySelector(".interactionArea>button").disabled = true;
+
+                }
+            }
+        }
+        async function handleCreateServer(t) {
+            let p = document.querySelector(".prompt")
+            p.setAttribute("lol", `${!(p.getAttribute("lol") == "true")}`)
+
+
+            document.querySelector(".interactionArea").innerHTML = `<p class="title">Create a Discord Server</p><p class="labelText">Enter server name</p><input placeholder="h"></input><div onclick="untoggle()"class="x">x</div><button class="join" disabled>create :)</button></div>`
+            document.querySelector(".interactionArea>input").oninput = async function (e) {
+                let last = e.target.value
+                if (last == "" | last == " ") return document.querySelector(".interactionArea>button").disabled = true;
+
+                document.querySelector(".interactionArea>button").disabled = false;
+                let validId = last
+                document.querySelector(".interactionArea>button").onclick = async function () {
+                    let temp = await fetch(`https://lq.litdevs.org/v1/quark/create`, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
+                            "Content-Type": "Application/json"
+                        },
+                        body: JSON.stringify({ "name": last })
+                    })
+                    let y = await temp.json()
+                    if (y.request.status_code != 200) {
+                        alert("an eror occured and you the server was not created")
+                    }
+                    let serv = y.response.quark._id
+                    untoggle()
+                    await getServers(function () { loadServer(serv) })
+
+                }
+            }
+        }
+
+
+        async function untoggle(t) {
+            let p = document.querySelector(".prompt")
+            p.setAttribute("lol", `${!(p.getAttribute("lol") == "true")}`)
+        }
+        function attatchify(text, e = false) {
+            let x = text.split(" ")
+            let y = []
+            if (e == true) {
+                for (index in x) {
+                    if (attachments.list.includes(x[index])) y.push(attachments[x[index].replace("[attachment-", "").replace("]", "")].res)
+                }
+                return y
+            }
+            for (index in x) {
+                if (attachments.list.includes(x[index])) y.push(attachments[x[index].replace("[attachment-", "").replace("]", "")])
+            }
+            return y
+        }
+        function subscribeChannel(id) {
+            if (ws) {
+                if (ws.readyState == 0) setTimeout(function () { ws.send(JSON.stringify({ "event": "subscribe", "message": `channel_${id}` })) }, 500)
+                else ws.send(JSON.stringify({ "event": "subscribe", "message": `channel_${id}` }))
+            }
+        }
+        function subscribeQuark(id) {
+            if (ws) {
+                if (ws.readyState == 0) return setTimeout(function () {
+                    ws.send(JSON.stringify({ "event": "subscribe", "message": `quark_${selectedServer}` }))
+                }, 500)
+                else ws.send(JSON.stringify({ "event": "subscribe", "message": `quark_${selectedServer}` }))
+            }
+        }
+        function newChannel(t) {
+            t.onclick = function () { }
+            let x = Array.from(t.children).find(e => e.tagName == "P");
+            x.contentEditable = true;
+            x.focus()
+            x.onkeydown = async function (k) {
+                let name = x.innerText
+                if (k.which === 13) {
+                    k.preventDefault()
+                    let temp = await fetch(`https://lq.litdevs.org/v1/channel/create`, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
+                            "Content-Type": "Application/json"
+                        },
+                        body: JSON.stringify({ "name": x.innerText, "quark": selectedServer })
+                    })
+                    let y = await temp.json()
+                    if (y.request.status_code == 200) {
+                        t.classList.remove("new")
+                        x.blur()
+                        x.contentEditable = false
+                        let id = y.response.channel._id;
+                        let name = y.response.channel.name
+                        selectedChannel = id
+                        loadServer(selectedServer)
+                    } else {
+                        x.innerText = `error-${y.request.status_code}`
+                        if (y.request.status_code == 404) {
+                            x.contentEditable = false
+                            x.innerText = `unauthorized`
+                            setTimeout(function () {
+                                t.remove()
+                            }, 3000)
+                        }
+                    }
+                }
+
+            }
+
+        }
+
+        async function deleteChannel(t) {
+            let temp = await fetch(`https://lq.litdevs.org/v1/channel/${t.id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
+                    "Content-Type": "Application/json"
+                },
+            })
+
+        }
+    </script>
+</head>
+
+<body>
+    <div class="prompt" lol="true">
+        <div class="interactionArea"></div>
+    </div>
+    <div class="sidebar">
+        <div class="profile"><img src=""></div>
+        <div class="smallLine"></div>
+        <div class="serverListContainer"></div>
+        <div class="smallLine"></div>
+        <div class="create" onclick=""></div>
+        <div class="join" onclick="handleJoinServer"></div>
+
+    </div>
+    <div class="serverPanel">
+        <div class="header">
+            <p class="name"><b>Loading...</b></p>
+        </div>
+        <div class="channelContainer"></div>
+    </div>
+    <div class="channelArea">
+        <div class="channelHeader">
+            <p class="name">Loading...</p>
+            <div class="smallLineVertical"></div>
+            <p class="desc">Loading...</p>
+            <div class="smallLineVertical"></div>
+            <div class="delButton" onclick="deleteChannel(this)"></div>
+        </div>
+        <div class="messageArea"></div>
+        <div class="sendMessageBox">
+            <input class="messageInput" placeholder="bukkybox sux!! (me = 🤓🤓🤓🤓)">
+            <div class="attachmentArea"></div>
+
+            <label class="fileUploadLabel" for="fileUpload">
+                <div>+</div>
+            </label><input name="fileUpload" type="file" id="fileUpload" hidden></input>
+        </div>
+
+    </div>
+    <div class="memberList">
+
+    </div>
+    <script>
+
+
+
+        getServers()
+        initial()
+        loadChannelMesages(selectedChannel)
+
+
+        setInterval(function () {
+            if (scrollLock) document.querySelector(".channelArea >.messageArea").scrollTo(0, document.querySelector(".channelArea >.messageArea").scrollHeight)
+            currentChannel.render()
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+
+        }, 1000)
+
+        setInterval(function () {
+            h += 1
+            console.log("[info] Refreshing user, message, and server cache")
+            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+            getServers()
+            loadUsersList(cache[`https://lq.litdevs.org/v1/quark/${selectedServer}`].members, true)
+
+            loadChannelMesages(selectedChannel)
+            initial()
+        }, 1000 * 20)
+
+        document.querySelector(".create").onclick = handleCreateServer
+        document.querySelector(".join").onclick = handleJoinServer
+
+
+        document.getElementById("fileUpload").addEventListener("change", async (e) => {
+
+            const fileInput = document.getElementById("fileUpload");
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                let id = uuid()
+                attachments[id] = { res: reader.result.split(",")[1], name: e.target.files[0].name, id: id }
+                attachments.list.push(`[attachment-${id}]`)
+                check()
+                document.querySelector(".messageInput").value += ` [attachment-${id}] `
+            };
+            reader.readAsDataURL(file);
+
+
+
+
+        })
+
+        function check() {
+            let value = document.querySelector(".messageInput").value
+
+            if (attatchify(value).length == 0) {
+                document.querySelector(".sendMessageBox>.attachmentArea").innerHTML = ``
+                document.querySelector(".sendMessageBox>.attachmentArea").classList.remove("show")
+            } else if (attatchify(value).length != document.querySelector(".sendMessageBox>.attachmentArea").childElementCount) {
+                document.querySelector(".sendMessageBox>.attachmentArea").innerHTML = ``
+                let x = (attatchify(value).slice(0, 10))
+                x.forEach(element => {
+                    document.querySelector(".sendMessageBox>.attachmentArea").innerHTML += `<div class="attachmentCard"><a class="attachmentName">${attachments[element.id].name}</a></div>`
+                    document.querySelector(".sendMessageBox>.attachmentArea").classList.add("show")
+                });
+            }
+
+        }
+
+        setInterval(check, 100)
+
+
+
+        document.querySelector(".messageInput").onkeydown = async function (e) {
+            if (!e) e = window.event;
+            let value = document.querySelector(".messageInput").value
+            var keyCode = e.code || e.key;
+
+            if (keyCode == 'Enter') {
+                document.querySelector(".messageInput").value = ""
+                var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
+                let x = {}
+                if (cache != null && cache["https://lq.litdevs.org/v1/user/me"] != undefined) x = cache["https://lq.litdevs.org/v1/user/me"]
+                let val = value.replaceAll(/(\[attachment-)[a-z0-9]{12}(\])/g, "")
+                if (val.length == 0) val = value
+                let temp = await fetch(`https://lq.litdevs.org/v1/channel/${selectedChannel}/messages`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
+                        "Content-Type": "Application/json",
+                        "lq-agent": `blamequark/0.1.2`
+                    },
+                    body: JSON.stringify({ "content": val, "attachments": attatchify(value, true) })
+                })
+                let y = await temp.json()
+                document.querySelector(".channelArea >.messageArea").scrollTo(0, document.querySelector(".channelArea >.messageArea").scrollHeight)
+                scrollLock = true;
+
+
+            }
+        }
+        document.onkeypress = async function (e) {
+            if (e.path[0].className != "text" && e.path[0].className != "new") document.querySelector(".messageInput").focus()
+        }
+        document.querySelector(".channelArea >.messageArea").onscroll = async function (e) {
+            var st = window.pageYOffset || document.documentElement.scrollTop;
+            if (document.querySelector(".channelArea >.messageArea").scrollTop == 0) {
+                let x;
+
+                try {
+                    x = (document.querySelector(".channelArea >.messageArea").children[0].getAttribute("timestamp"))
+                } catch (e) {
+                    x = Date.now() - 1000 * 60
+                }
+                //await loadChannelMesages(selectedChannel, x)
+                //currentChannel.render()
+            }
+            if (st > lastScrollTop) {
+                scrollLock = true;
+            } else {
+                scrollLock = false;
+                if ((document.querySelector(".channelArea >.messageArea").offsetHeight + document.querySelector(".channelArea >.messageArea").scrollTop) == document.querySelector(".channelArea >.messageArea").scrollHeight) scrollLock = true;
+            }
+            lastScrollTop = st <= 0 ? 0 : st; // 
+        }
+        ws = new WebSocket("wss://lq-gateway.litdevs.org", `${document.cookie.split("=")[1]}`)
+        ws.onopen = function () {
+            ws.send(JSON.stringify({ "event": "heartbeat", "message": "boop" }))
+            ws.send(JSON.stringify({ "event": "subscribe", "message": `channel_${selectedChannel}` }))
+            ws.send(JSON.stringify({ "event": "subscribe", "message": `quark_${selectedServer}` }))
+
+        }
+        setInterval(function () {
+            ws.send(JSON.stringify({ "event": "heartbeat", "message": "boop" }))
+        }, 25000)
+
+
+        ws.onmessage = (msg) => {
+            let data = JSON.parse(msg.data)
+            console.log("[socket]", data.event || data.eventId)
+            if (data.eventId == "messageCreate" && data.message.channelId == selectedChannel) {
+                currentChannel.messages.push(new Message(data))
+                currentChannel.validate(currentChannel.messages)
+                currentChannel.render()
+            }
+            if (data.eventId == "messageDelete" && data.message.channelId == selectedChannel) {
+                let x = currentChannel.messages.findIndex(e => e._id == data.message._id)
+                console.log(x)
+                currentChannel.messages.splice(x, 1);
+                currentChannel.validate(currentChannel.messages)
+                currentChannel.render()
+            }
+            if (data.eventId == "channelDelete" && data.quark._id == selectedServer) {
+                let refresh = false;
+                if (data.channel._id == selectedChannel) refresh = true;
+                loadServer(data.quark._id, refresh)
+            }
+            if (data.eventId == "channelCreate" && data.quark._id == selectedServer) {
+                loadServer(data.quark._id, false)
+            }
+            if (data.eventId == "messageUpdate" && data.message.channelId == selectedChannel) {
+                let x = currentChannel.messages.findIndex(e => e._id == data.message._id)
+                console.log({ ...currentChannel.messages[x].raw, ...data })
+                currentChannel.messages[x] = new Message({ ...currentChannel.messages[x].raw, ...data })
+                currentChannel.validate(currentChannel.messages)
+                currentChannel.render()
+            }
+        }
+        ws.onclose = () => {
+            window.location.href = window.location.href
+        }
+
+
+    </script>
+</body>
+
+</html>

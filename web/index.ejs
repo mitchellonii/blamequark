@@ -1,0 +1,39 @@
+<form onsubmit="return false">
+    <label for="email">Email:</label><br>
+    <input type="text" id="email" name="email" value="@gmail.com"><br>
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password"><br>
+    <input type="submit" value="Submit">
+</form>
+
+<script>
+    async function init() {
+        if (document.cookie != undefined && document.cookie.split("=")[0] == "access_token") {
+            let temp = await fetch("https://lq.litdevs.org/v1/user/me", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${document.cookie.split("=")[1]}`
+                }
+            })
+            let y = await temp.json()
+            if (y.request.status_code != 200) alert(y.request.status_code)
+            window.location.href = window.location.href + "channels"
+        }
+    }
+    init()
+
+    document.querySelector("form").onsubmit = async function (e) {
+        e.preventDefault()
+        let x = await fetch("https://lq.litdevs.org/v1/auth/token", {
+            method: "POST",
+            headers: { "Content-Type": "Application/json" },
+            body: JSON.stringify({ "email": document.querySelector("#email").value, "password": document.querySelector("#password").value })
+        })
+
+        let y = await x.json()
+        if (y.request.status_code != 200) alert(y.request.status_code)
+        document.cookie = `access_token=${y.response.access_token}`;
+        window.location.href = window.location.href + "channels"
+        return false;
+    }
+</script>

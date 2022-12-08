@@ -1,0 +1,946 @@
+@font-face {
+    font-family: 'gg sans';
+    src: url('ggsans-normal.woff2');
+}
+
+@font-face {
+    font-family: 'gg sans bold';
+    src: url('ggsans-bold.woff2');
+}
+
+@font-face {
+    font-family: 'serbino';
+    src: url("Sebino-Regular.ttf");
+}
+
+@keyframes lol {
+    0% {
+        background-size: 100%, auto;
+        background-position-x: 0;
+    }
+
+    50% {
+        background-size: 120%, auto;
+        background-position-x: -10%;
+
+    }
+
+    100% {
+        background-size: 100%, auto;
+        background-position-x: 0;
+    }
+}
+
+body {
+    background-color: rgba(47, 49, 55, 255);
+}
+
+:root:root {
+    --font-primary: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-display: "gg sans bold", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-headline: "ABC Ginto Nord", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+body {
+    margin: 0px;
+    width: 100%;
+    height: 100%
+}
+
+
+
+.sidebar {
+    position: fixed;
+    width: 80px;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(32, 34, 37, 1);
+    overflow: none;
+}
+
+.sidebar>.profile,
+.sidebar>.serverListContainer>.serverContainer>.server,
+.sidebar>.join,
+.sidebar>.create {
+    z-index: 5;
+    position: relative;
+    width: 70%;
+    top: 30px;
+    left: 15%;
+    aspect-ratio: 1;
+    background-color: rgba(55, 57, 63, 1);
+    border-radius: 50%;
+    overflow: hidden;
+    transition: 0.15s;
+    background-image: url("not-discord.png");
+    background-position: center;
+    background-size: 70%;
+    background-repeat: no-repeat;
+    cursor: pointer
+}
+
+.sidebar>.create {
+    background-image: url("joinbumton.png");
+    background-size: 125%;
+    bottom: 10px;
+    position: absolute;
+    top: unset;
+}
+
+.sidebar>.join {
+    background-image: url("compas-notMongoDB.png");
+    background-size: 125%;
+    bottom: 80px;
+    position: absolute;
+    top: unset;
+}
+
+.sidebar>.profile:hover,
+.sidebar>.create:hover,
+.sidebar>.join:hover,
+.sidebar>.serverListContainer>.serverContainer>.server:hover,
+.sidebar>.serverListContainer>.serverContainer.selected>.server {
+    background-color: #7289da;
+    border-radius: 30%;
+    overflow: hidden;
+}
+
+.sidebar>.profile>img,
+.sidebar>.serverListContainer>.serverContainer>.server>img {
+    position: relative;
+    width: 100%;
+    left: 0%;
+    top: 0%;
+}
+
+
+
+.smallLine {
+    position: relative;
+    width: 30%;
+    height: 5px;
+    background-color: rgba(55, 57, 63, 255);
+    border-radius: 50%;
+    left: 35%;
+    top: 50px
+}
+
+.sidebar>.serverListContainer {
+    position: relative;
+    width: 100%;
+    height: calc(100% - 300px);
+    overflow-y: scroll;
+    padding-bottom: 15px;
+    top: 60px;
+}
+
+.sidebar>.serverListContainer>.serverContainer>.server>.tick {
+    position: absolute;
+    left: 0;
+    height: 20%;
+    top: 40%;
+    background-color: rgba(1, 1, 1, 0);
+    aspect-ratio: 1;
+    border-radius: 50%;
+}
+
+
+
+
+.sidebar>.serverListContainer>.serverContainer {
+    width: 100%;
+    height: 78px;
+}
+
+.sidebar>.serverListContainer>.serverContainer>.server {
+    top: 0;
+}
+
+.sidebar>.serverListContainer>.serverContainer>.tick {
+    position: relative;
+    height: 10px;
+    width: 10px;
+    background-color: rgba(1, 1, 1, 0);
+    border-radius: 50%;
+    transition: 0.15s;
+    top: 50%;
+    transform: translateY(-50%)translateX(-50%)
+}
+
+
+.sidebar>.serverListContainer>.serverContainer:hover>.tick,
+.sidebar>.serverListContainer>.serverContainer.selected>.tick {
+    height: 60%;
+    border-radius: 25%;
+    background-color: white;
+}
+
+.sidebar>.serverListContainer>.serverContainer:hover>.server,
+.sidebar>.serverListContainer>.serverContainer.selected>.server {
+    top: -38px
+}
+
+.serverPanel {
+    position: fixed;
+    left: 80px;
+    top: 0;
+    height: 100%;
+    width: 250px;
+    background-color: rgba(47, 49, 55, 255);
+}
+
+.serverPanel>.header {
+    position: fixed;
+    top: 0px;
+    left: 80px;
+    width: 210px;
+    height: 100px;
+    border-bottom: 3px solid rgba(45, 47, 51, 255);
+    text-align: left;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-size: 100%, auto;
+
+}
+
+.serverPanel>.header>.name {
+    color: white;
+    font-family: var(--font-display);
+}
+
+
+.serverPanel>.channelContainer {
+    position: fixed;
+    left: 80px;
+    top: 100px;
+    width: 230px;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: left;
+    font-family: var(--font-headline);
+    color: #b5b7ba;
+    font-size: 15px;
+    padding-top: 20px;
+    cursor: pointer;
+}
+
+.new>p::before {
+    content: "+" !important
+}
+
+.new>p::after {
+    content: "" !important
+}
+
+.serverPanel>.channelContainer>.channel>p::before {
+    content: "#";
+    padding-right: 7px;
+    padding-left: 10px;
+    font-family: var(--font-display);
+    color: #96989e;
+    font-size: 20px;
+}
+
+
+.serverPanel>.channelContainer>.channel:hover>p::before,
+.serverPanel>.channelContainer>.channel.selected>p::before {
+    color: white;
+}
+
+.serverPanel>.channelContainer>.channel {
+    transition: 0.2s;
+    border-radius: 5px;
+}
+
+.serverPanel>.channelContainer>.channel:hover,
+.serverPanel>.channelContainer>.channel.selected {
+    background-color: rgba(255, 255, 255, 0.1);
+
+}
+
+.serverPanel>.channelContainer>.channel:hover>p,
+.serverPanel>.channelContainer>.channel.selected>p {
+    color: white;
+}
+
+.channelArea {
+    position: fixed;
+    left: 330px;
+    top: 0px;
+    height: 100%;
+    width: calc(85% - 330px);
+    background-color: #37393f;
+}
+
+.channelArea>.channelHeader {
+    position: fixed;
+    left: 330px;
+    top: 0;
+    height: 50px;
+    width: calc(100% - 330px);
+    background-color: #37393f;
+    border-bottom: 1.5px solid rgba(45, 47, 51, 255);
+    display: flex;
+    align-items: center;
+}
+
+.channelArea>.channelHeader>.name {
+    position: relative;
+    font-family: var(--font-headline);
+    font-size: 20px;
+    font-weight: bold;
+    left: 0;
+    color: white;
+    max-width: max-content;
+    align-items: center;
+    float: left;
+    top: 0;
+
+}
+
+.channelArea>.channelHeader>.desc {
+    position: relative;
+    font-family: var(--font-primary);
+    font-size: 15px;
+    padding-left: 20px;
+    font-weight: bold;
+    left: 0;
+    color: #95979d;
+    max-width: max-content;
+    align-items: center;
+    float: left;
+    top: 0;
+
+}
+
+.channelArea>.channelHeader>.name::before {
+    content: "#";
+    padding-right: 7px;
+    padding-left: 20px;
+    font-family: var(--font-display);
+    color: #96989e;
+    font-size: 20px;
+}
+
+.smallLineVertical {
+    position: relative;
+    width: 3px;
+    height: 50%;
+    margin-left: 20px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 15%;
+    display: block;
+    float: left;
+}
+
+.channelArea>.messageArea {
+    position: relative;
+    top: 50px;
+    left: 0px;
+    width: 100%;
+    height: calc(100% - 120px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+    z-index: -2;
+}
+
+.channelArea>.messageArea.loading>.message {
+    opacity: 0
+}
+
+.message {
+    position: relative;
+    width: 100%;
+    min-height: 50px;
+    margin-bottom: 10px;
+    transition: 0.15s;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px;
+    padding-bottom: 0px;
+}
+
+.message.join {
+    position: relative;
+    width: 100%;
+    transition: 0.15s;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    min-height: 10px !important;
+    margin-top: -8px;
+}
+
+.message:hover {
+    background-color: rgba(0, 0, 0, 0.1)
+}
+
+.message>img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    position: absolute
+}
+
+.message>.author {
+    font-family: var(--font-display);
+    color: white;
+    font-size: 15px;
+    position: absolute;
+    top: 0;
+    left: 90px;
+}
+
+.message>.text {
+    position: relative;
+    left: 69px;
+    top: 17px;
+    font-family: var(--font-primary);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    width: 60%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.message.join>.text {
+    position: relative;
+    left: 69px;
+    top: 2px;
+    font-family: var(--font-primary);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    width: 60%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+
+
+
+
+
+
+.prompt {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 300;
+    background-color: rgba(0, 0, 0, 0.8);
+    width: 100%;
+    height: 100%;
+    transition: 0.15s;
+}
+
+.prompt>.interactionArea {
+    position: relative;
+    width: 31%;
+    height: 70%;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border-radius: 7px;
+    transition: 0.15s;
+    z-index: 301;
+    overflow: hidden
+}
+
+.prompt[lol=true]>.interactionArea {
+    height: 10%;
+    width: 3%;
+    z-index: 0;
+}
+
+.prompt[lol=true] {
+    background-color: rgba(0, 0, 0, 0);
+    z-index: 0;
+}
+
+.interactionArea>.title {
+    position: relative;
+    top: 0;
+    padding: 5px;
+    left: 0;
+    font-family: var(--font-display);
+    text-align: center;
+    width: 400px;
+    font-size: 40px;
+}
+
+.interactionArea>.labelText {
+    position: relative;
+    top: 10%;
+    padding: 5px;
+    left: 0;
+    font-family: var(--font-headline);
+    text-align: center;
+    width: 100%;
+    font-size: 20px;
+}
+
+.interactionArea>input {
+    position: relative;
+    top: 10%;
+    padding: 5px;
+    left: 5%;
+    font-family: var(--font-headline);
+    text-align: center;
+    width: 90%;
+    font-size: 20px;
+    outline: none;
+    border: none;
+    border-bottom: rgba(55, 57, 63, 1) 1px solid;
+}
+
+.interactionArea>.input:focus {
+    outline: none;
+
+}
+
+.interactionArea>.join {
+    position: relative;
+    border: none;
+    background-color: #5865f2;
+    border-radius: 5px;
+    width: 30%;
+    left: 35%;
+    height: 30px;
+    top: 15%;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.interactionArea>.join:disabled {
+    background-color: #95979d;
+    cursor: default;
+
+}
+
+.interactionArea>.x {
+    width: 50px;
+    height: 50px;
+    color: #7289da;
+    font-family: var(--font-display);
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 30px;
+    cursor: pointer;
+    text-align: right;
+    padding-right: 10px;
+}
+
+.sendMessageBox {
+    background-color: #37393f;
+    width: 100%;
+    height: 65px;
+    position: absolute;
+    bottom: 0;
+    left: 0
+}
+
+.sendMessageBox>.messageInput {
+    position: absolute;
+    top: 0;
+    left: 2%;
+    width: calc(96% - 100px);
+    height: 50px;
+    background-color: #40444b;
+    border-radius: 10px;
+    border: none;
+    font-family: var(--font-headline);
+    color: white;
+    font-size: 15px;
+    padding-inline: 50px;
+
+}
+
+.fileUploadLabel>div {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 30px;
+    font-size: 30px;
+    background-color: #95979d;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+}
+
+.fileUploadLabel {
+    position: absolute;
+    top: 12px;
+    left: 25px;
+}
+
+small {
+    position: relative;
+    padding-left: 15px;
+    text-align: right;
+    font-size: 10px;
+    color: #b5b7ba;
+    transition: 0.2s
+}
+
+small:hover {
+    color: #b5b7ba
+}
+
+img.embed {
+    position: relative;
+    border-radius: 7px;
+    height: 200px;
+    width: auto;
+    left: 70px;
+    margin: 5px;
+    padding-top: 5px;
+}
+
+video.embed {
+    position: relative;
+    border-radius: 7px;
+    height: 200px;
+    width: auto;
+    left: 70px;
+}
+
+audio.embed {
+    position: relative;
+    border-radius: 7px;
+    padding-top: 20px;
+    left: 70px;
+}
+
+div.embed {
+    position: relative;
+    border-radius: 7px;
+    height: 200px;
+    width: 150px;
+    background-color: rgba(47, 49, 55, 255);
+    border-radius: 10px;
+    left: 70px;
+    background-image: url("new-document.png");
+    background-size: 100%, auto;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+div.embed>a {
+    position: absolute;
+    bottom: 0;
+    width: 95%;
+    height: 20%;
+    padding-left: 5px;
+    padding-right: 5px;
+    overflow-wrap: anywhere;
+    font-family: var(--font-primary);
+    font-size: 15px;
+}
+
+.editButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translateX(-100%);
+    opacity: 0;
+    transition: 0.15s;
+}
+
+.deleteButton {
+    position: absolute;
+    top: 0;
+    right: 40px;
+    transform: translateX(-100%);
+    opacity: 0;
+    transition: 0.15s;
+}
+
+.message:hover>.editButton,
+.message:hover>.deleteButton {
+    opacity: 1
+}
+
+
+.attachment {
+    position: relative;
+    height: 60%;
+    background-color: rgba(0, 0, 0, 0.4);
+    width: 80px;
+    border-radius: 7px;
+    top: 10%;
+}
+
+.sendMessageBox>.attachmentArea {
+    position: absolute;
+    top: -50px;
+    z-index: -10;
+    left: 2%;
+    width: 90%;
+    height: 100px;
+    background-color: rgba(64, 68, 75, 0.8);
+    border-radius: 10px;
+    border: none;
+    font-family: var(--font-headline);
+    color: white;
+    font-size: 15px;
+    padding-left: 50px;
+    line-height: 50px;
+    align-items: center;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    opacity: 0;
+    transition: 1s;
+    overflow: hidden;
+    overflow-y: scroll;
+    display: flex;
+    flex-wrap: wrap;
+
+}
+
+.sendMessageBox>.attachmentArea.show {
+    opacity: 1;
+    top: -90px;
+    z-index: -1;
+}
+
+.attachmentCard {
+    position: relative;
+    width: 120px;
+    height: 40px;
+    background-color: rgba(47, 49, 55, 0.8);
+    border-radius: 10px;
+    font-size: 10px;
+    line-height: 100%;
+    align-items: center;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.attachmentCard>a {
+    position: relative;
+    top: 5px
+}
+
+.attachmentName::before {
+    content: "";
+    display: block;
+    background: url("blank-page.png") no-repeat;
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin: 6px;
+    background-size: 100%;
+}
+
+body::-webkit-scrollbar {
+    width: 0;
+    display: none;
+}
+
+body::-webkit-scrollbar-track {
+    display: none;
+    width: 0;
+}
+
+body::-webkit-scrollbar-thumb {
+    display: none;
+    width: 0;
+}
+
+.emoji {
+    width: 20px;
+}
+
+.channelHeader>.delButton {
+    position: absolute;
+    height: 100%;
+    width: 50px;
+    right: 0;
+    background-color: rgba(47, 49, 55, 255);
+    border-top-left-radius: 7px;
+    border-bottom-left-radius: 7px;
+    background-image: url("bin.png");
+    background-size: 70%;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+.memberList {
+    position: fixed;
+    right: 0;
+    top: 50px;
+    height: calc(100% - 50px);
+    background-color: #2f3137;
+    width: 15%;
+    border-left: 1px rgba(0, 0, 0, 0.5) solid;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.memberList>.user {
+    position: relative;
+    width: 80%;
+    height: 50px;
+    left: 10px;
+    margin-bottom: 10px;
+    padding-left: 5px;
+    transition: 0.15s;
+    border-radius: 5px;
+}
+
+.memberList>.user:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.memberList>.user>img {
+    position: absolute;
+    height: 90%;
+    top: 5%;
+    border-radius: 50px
+}
+
+.memberList>.user>p {
+    text-align: left;
+    position: absolute;
+    padding-left: 50px;
+    line-height: 100%;
+    color: #96989e;
+    font-family: "serbino";
+    text-overflow: ellipsis;
+    word-break: break-all;
+    line-height: 100%;
+    width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+
+}
+
+.memberList>.header {
+    font-family: var(--font-display);
+    color: #95979d;
+    width: 100%;
+    position: relative;
+    text-align: left;
+    padding-left: 13px;
+    height: 30px;
+    margin-top: 15px;
+}
+
+@media (max-width:1000px) {
+    .serverPanel {
+        width: 50px;
+        transition: 1s;
+        overflow: hidden;
+        z-index: 100;
+    }
+
+    .serverPanel:hover {
+        width: 250px;
+    }
+
+    .channelArea {
+        left: 120px;
+        width: calc(100% - 130px);
+    }
+
+    .serverPanel>.header {
+        width: 50px;
+        transition: 1s;
+        background-size: 50px, auto;
+        overflow: hidden;
+        background-repeat: no-repeat;
+    }
+
+    .serverPanel:hover>.header {
+        width: 210px;
+    }
+
+    .channel {
+        width: 50px;
+    }
+
+    .serverPanel:hover>.channelContainer>.channel {
+        width: 240px;
+    }
+
+    .channel>p {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .serverPanel>.header>.name {
+        position: absolute;
+        top: 50px;
+        width: 50px;
+        left: 0;
+        word-break: break-all;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        text-align: left;
+        font-size: 15px;
+    }
+
+    .serverPanel>.header {
+        background-size: 100%, auto;
+        width: 50px;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+
+    }
+
+    .serverPanel:hover>.header>.name {
+        position: absolute;
+        overflow: visible;
+        text-align: center;
+        width: 210px;
+        left: 0px;
+        font-size: 30px;
+        top: 10px;
+    }
+
+    .serverPanel:hover>.header {
+        width: 250px;
+    }
+
+    .channelArea>.channelHeader {
+        left: 120px;
+    }
+
+    .channelContainer {
+        width: 50px !important;
+        left: 70px !important;
+    }
+
+    .message>.text {
+        width: 50%
+    }
+}
+
+@media (max-width:850px) {
+    .memberList {
+        transition: 1s;
+        width: 50px;
+    }
+
+    .memberList:hover {
+        transition: 1s;
+        width: 200px;
+    }
+
+    .channelArea>.channelHeader {
+        width: calc(100% - 130px)
+    }
+
+    .delButton {
+        background-repeat: no-repeat !important;
+        background-size: 50px;
+        background-position: 0 !important;
+        right: 0;
+    }
+}
