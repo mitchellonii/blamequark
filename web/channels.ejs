@@ -126,7 +126,7 @@
                 headers: {
                     "Authorization": `Bearer ${document.cookie.split("=")[1]}`,
                     "Content-Type": "Application/json",
-                    "lq-agent": `blamequark/0.1.2`
+                    "lq-agent": `blamequark/0.1.3`
                 },
                 body: JSON.stringify({ "content": val, "attachments": attatchify(value, true) })
             })
@@ -138,7 +138,7 @@
         }
     }
     document.onkeypress = async function (e) {
-        if (e.path[0].className != "text" && e.path[0].className != "new") document.querySelector(".messageInput").focus()
+        if (typeof e.path !== "undefined" && e.path[0] != undefined && e.path[0].className != "text" && e.path[0].className != "new") document.querySelector(".messageInput").focus()
     }
     document.querySelector(".channelArea >.messageArea").onscroll = async function (e) {
         let heightOld = document.querySelector(".channelArea >.messageArea").scrollHeight
@@ -156,7 +156,7 @@
             await currentChannel.validate(currentChannel.messages)
             await currentChannel.render()
             let heightNew = document.querySelector(".channelArea >.messageArea").scrollHeight
-            document.querySelector(".channelArea >.messageArea").scrollTo(0,heightNew-heightOld)
+            document.querySelector(".channelArea >.messageArea").scrollTo(0, heightNew - heightOld)
 
         }
         if (st > lastScrollTop) {
@@ -213,6 +213,20 @@
     ws.onclose = () => {
         window.location.href = window.location.href
     }
+    window.addEventListener('paste', e => {
 
+        if (e.clipboardData.files.length == 0) return
+        const file = e.clipboardData.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            let id = uuid()
+            attachments[id] = { res: reader.result.split(",")[1], name: 'clipboard-attachment', id: id }
+            attachments.list.push(`[attachment-${id}]`)
+            check()
+            document.querySelector(".messageInput").value += ` [attachment-${id}] `
+        };
+        reader.readAsDataURL(file);
+
+    });
 
 </script>

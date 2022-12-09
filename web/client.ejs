@@ -5,7 +5,7 @@
     <title>Blamequark</title>
     <link rel="stylesheet" href="style.css" />
     <script>
-        console.log("Blamequark v0.1.2")
+        console.log("Blamequark v0.1.3")
         let quickload = {
             "redirect": async function (path, isPop = false) {
                 if (!isPop) history.pushState(path, document.title, path);
@@ -232,7 +232,9 @@
                         if (!ids.includes(msgs[index]._id)) {
 
                             var x = document.createElement("div")
-                            x.innerHTML = await msgs[index].render(false)
+                            let join = false
+                            if (msgs[index - 1] != undefined && msgs[index - 1].authorId == msgs[index].authorId) join = true;
+                            x.innerHTML = await msgs[index].render(join)
                             let ts = x.firstChild.getAttribute("timestamp")
                             if (currentChildren.length == 0) document.querySelector(".messageArea").appendChild(x.firstChild)
                             currentChildren = Array.from(document.querySelector(".messageArea").children)
@@ -511,8 +513,8 @@
                     }
                 })
                 let y = await temp.json()
-                return (y.response.user)
                 quickload.cache(`https://lq.litdevs.org/v1/user/${id}`, y.response.user)
+                return y.response.user
 
             }
 
