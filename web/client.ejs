@@ -264,6 +264,7 @@
                     }//editing done
 
                     quickload.cache(`channel-html-${selectedChannel}`, document.querySelector(".channelArea >.messageArea").innerHTML)
+                    if (scrollLock) document.querySelector(".messageArea").scrollTo(0, document.querySelector(".messageArea").scrollHeight)
                 }
             }
         }
@@ -420,12 +421,12 @@
             })
             t.classList.add("selected")
             let id = t.id
+            if (id == selectedChannel) return
             selectedChannel = id
             loadChannel(id)
         }
         async function loadChannel(channelID) {
             currentChannel.inactive = true;
-            currentChannel.messages = []
             delete currentChannel
             subscribeChannel(channelID)
             loadChannelMesages(channelID)
@@ -450,10 +451,7 @@
             document.querySelector(".channelHeader>.name").innerText = y.response.channel.name
             document.querySelector(".channelHeader>.desc").innerText = y.response.channel.description
             currentChannel = new Channel(y.response.channel)
-            h += 1
-            var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
             getServers()
-            loadChannelMesages(selectedChannel)
             initial()
         }
 
@@ -526,9 +524,9 @@
             else startTimestamp = ""
             if (channelID == -1) return
             var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
-            if (cache != null && cache[`channel-html-${channelID}`] != undefined) {
-                //document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
-
+            if (cache != null && cache[`channel-html-${channelID}`] != undefined && document.querySelector(".channelArea >.messageArea").innerHTML != cache[`channel-html-${channelID}`]) {
+                document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
+                if (scrollLock) document.querySelector(".messageArea").scrollTo(0, document.querySelector(".messageArea").scrollHeight)
             }
             if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`] != undefined) {
                 if (document.querySelector(".channelArea >.messageArea").innerHTML == "") {
@@ -539,10 +537,7 @@
                         t.push(x)
                     }
                     currentChannel.validate(t)
-                    await currentChannel.render()
                 }
-
-            } else {
 
             }
             let temp = await fetch(`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`, {
@@ -561,14 +556,9 @@
 
             }
             currentChannel.validate(t)
+            quickload.cache(`https://lq.litdevs.org/v1/channel/${channelID}/messages?startTimestamp=${startTimestamp}`, y.response.messages)
 
-            if (selectedChannel !== channelID) return
-            if (JSON.stringify(y.response.messages) != JSON.stringify(cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages?startTimestamp=${startTimestamp}`])) {
 
-                quickload.cache(`https://lq.litdevs.org/v1/channel/${channelID}/messages?startTimestamp=${startTimestamp}`, y.response.messages)
-                await currentChannel.render()
-
-            }
 
 
         }
