@@ -358,7 +358,7 @@ body {
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 10px;
-    padding-bottom: 0px;
+    padding-bottom: 5px;
 }
 
 .message.join {
@@ -370,7 +370,7 @@ body {
     padding-top: 0px;
     padding-bottom: 0px;
     min-height: 10px !important;
-    margin-top: -8px;
+    margin-top: -12px;
 }
 
 .message:hover {
