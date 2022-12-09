@@ -204,7 +204,7 @@
                 this.messages = []
                 this.inactive = false;
                 this.validate = (newMsgList) => {
-                    var input = newMsgList
+                    var input = this.messages.concat(newMsgList)
 
 
                     const ids = input.map(o => o._id)
@@ -218,44 +218,43 @@
                 }
                 this.render = async () => {
                     if (this.inactive) return;
-                    let h = document.querySelector(".messageArea").children
-
-
-                    let children = Array.from(h)
+                    
+                    let currentChildren = Array.from(document.querySelector(".messageArea").children)
                     let msgs = Array.from(this.messages)
-                    let done = []
 
-                    let arr = []
-                    for (index in this.messages) {
-                        let join = false;
-                        if (this.messages[index - 1] != undefined && this.messages[index].authorId == this.messages[index - 1].authorId) join = true
-                        arr.push(await this.messages[index].render(join))
-                    }
-
-                    for (index in arr) {
-                        let real;
-                        if (children[index] != undefined) {
-                            real = children[index].outerHTML;
-                        } else {
-                            real = undefined
+                    var ids = msgs.map(o => o._id);
+                    for(index in currentChildren){
+                        if(!ids.includes(currentChildren[index].id)){
+                            currentChildren[index].remove()
                         }
-                        let neww = document.createElement("div")
-                        neww.innerHTML = arr[index];
+                    }//delete done
 
-                        done.push(this.messages[index]._id)
-                        if (document.getElementById(this.messages[index]._id) == undefined) {
+                    ids = currentChildren.map(child => child.id)
+                    currentChildren = Array.from(document.querySelector(".messageArea").children)
+                    for(index in msgs){
+                        if(!ids.includes(msgs[index]._id)){
                             let x = document.createElement("div")
-                            x.innerHTML = arr[index];
-                            document.querySelector(".channelArea >.messageArea").appendChild(x.firstChild)
-                        }
+                            x.innerHTML = await msgs[index].render(false)
+                            let indexOfChild = 999
+                            for(index in currentChildren){
+                                if(currentChildren[index].getAttribute("timestamp") < msgs[index].timestamp)document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,index)
+                            }
 
-                        else if (children[index] != undefined && neww.innerHTML.replace(/(\?)[0-9]{1,10}/g, "").replace(real.replace(/(\?)[0-9]{1,10}/g, ""), "").length > 2) {
-                            if (!real.includes("editing")) document.getElementById(this.messages[index]._id).outerHTML = neww.innerHTML;
+                            document.querySelector(".messageArea").appendChild(x.firstChild)
                         }
-                    }
-                    for (index in children) {
-                        if (!done.includes(children[index].id)) { children[index].remove(); }
-                    }
+                    }//create done
+
+                    currentChildren = Array.from(document.querySelector(".messageArea").children)
+                    for(index in currentChildren){
+                        let y = msgs.find(msg => msg._id == currentChildren[index].id)
+                        let t = Array.from(currentChildren[index].childNodes).find(c => c.className.includes("text"));
+
+                        if(`${y.content}${y.edited==true?`<small class="edit">(edited)</small>`:""}` !==t.innerHTML && !currentChildren[index].className.includes("editing")){
+                            currentChildren[index].outerHTML = await msgs[index].render(false)
+                        }
+                    }//editing done
+
+                  
                     quickload.cache(`channel-html-${selectedChannel}`, document.querySelector(".channelArea >.messageArea").innerHTML)
                 }
             }
@@ -519,7 +518,7 @@
             if (channelID == -1) return
             var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
             if (cache != null && cache[`channel-html-${channelID}`] != undefined) {
-                document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
+                //document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
 
             }
             if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`] != undefined) {
@@ -721,6 +720,15 @@
             })
 
         }
+
+        Element.prototype.insertChildAtIndex = function(child, index) {
+  if (!index) index = 0
+  if (index >= this.children.length) {
+    this.appendChild(child)
+  } else {
+    this.insertBefore(child, this.children[index])
+  }
+}
     </script>
 </head>
 
