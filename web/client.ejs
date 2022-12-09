@@ -231,22 +231,28 @@
 
                     ids = currentChildren.map(child => child.id)
                     currentChildren = Array.from(document.querySelector(".messageArea").children)
-
+                    let h = 0
                     for(index in msgs){
                         if(!ids.includes(msgs[index]._id)){
+                            h++;
                             var x = document.createElement("div")
                             x.innerHTML = await msgs[index].render(false)
                             let indexOfChild = 999
                             
-
                             if(currentChildren.length == 0)document.querySelector(".messageArea").appendChild(x.firstChild)
-                            for(index in currentChildren){
+                            for(var i in currentChildren){
                                 if(x.firstChild == null)break;
-                                if(currentChildren[index].getAttribute("timestamp")  > msgs[index].timestamp){
+                                if(currentChildren[0].getAttribute("timestamp")  > msgs[i].timestamp){
                                     document.querySelector(".messageArea").prepend(x.firstChild)
+                                    currentChildren = Array.from(document.querySelector(".messageArea").children)
+                                    break;
                                 }
-                                else if(currentChildren[index].getAttribute("timestamp") < msgs[index].timestamp){
-                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,index)
+                                else if(currentChildren[i].getAttribute("timestamp") < msgs[i].timestamp){
+                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,i);
+                                    break;
+                                }else{
+                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,parseInt(i)+h-1);
+
                                 }
  
                             }
@@ -462,6 +468,7 @@
 
         async function loadUsersList() {
             let id = selectedServer
+            if(id==-1)return
             let temp = await fetch(`https://lq.litdevs.org/v1/quark/${id}`, {
                 method: "GET",
                 headers: {

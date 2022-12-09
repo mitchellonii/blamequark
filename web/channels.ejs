@@ -152,10 +152,10 @@
             } catch (e) {
                 x = Date.now() - 1000 * 60
             }
-            //await loadChannelMesages(selectedChannel, x)
-            //await currentChannel.render()
+            await loadChannelMesages(selectedChannel, x)
+            await currentChannel.validate(currentChannel.messages)
+            await currentChannel.render()
             let heightNew = document.querySelector(".channelArea >.messageArea").scrollHeight
-            console.log(heightNew,heightOld)
             document.querySelector(".channelArea >.messageArea").scrollTo(0,heightNew-heightOld)
 
         }
