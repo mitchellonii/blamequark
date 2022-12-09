@@ -218,60 +218,49 @@
                 }
                 this.render = async () => {
                     if (this.inactive) return;
-                    
+
                     let currentChildren = Array.from(document.querySelector(".messageArea").children)
                     let msgs = Array.from(this.messages)
-
                     var ids = msgs.map(o => o._id);
-                    for(index in currentChildren){
-                        if(!ids.includes(currentChildren[index].id)){
+                    for (index in currentChildren) {
+                        if (!ids.includes(currentChildren[index].id)) {
                             currentChildren[index].remove()
                         }
                     }//delete done
-
                     ids = currentChildren.map(child => child.id)
-                    currentChildren = Array.from(document.querySelector(".messageArea").children)
-                    let h = 0
-                    for(index in msgs){
-                        if(!ids.includes(msgs[index]._id)){
-                            h++;
+                    for (let index = 0; index < msgs.length; index++) {
+                        if (!ids.includes(msgs[index]._id)) {
+
                             var x = document.createElement("div")
                             x.innerHTML = await msgs[index].render(false)
-                            let indexOfChild = 999
-                            
-                            if(currentChildren.length == 0)document.querySelector(".messageArea").appendChild(x.firstChild)
-                            for(var i in currentChildren){
-                                if(x.firstChild == null)break;
-                                if(currentChildren[0].getAttribute("timestamp")  > msgs[i].timestamp){
-                                    document.querySelector(".messageArea").prepend(x.firstChild)
-                                    currentChildren = Array.from(document.querySelector(".messageArea").children)
-                                    break;
-                                }
-                                else if(currentChildren[i].getAttribute("timestamp") < msgs[i].timestamp){
-                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,i);
-                                    break;
-                                }else{
-                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,parseInt(i)+h-1);
+                            let ts = x.firstChild.getAttribute("timestamp")
+                            if (currentChildren.length == 0) document.querySelector(".messageArea").appendChild(x.firstChild)
+                            currentChildren = Array.from(document.querySelector(".messageArea").children)
 
+                            if (currentChildren[currentChildren.length - 1].getAttribute("timestamp") < ts) {
+                                document.querySelector(".messageArea").appendChild(x.firstChild)
+
+                            } else {
+
+                                for (var i = 0; i < currentChildren.length; i++) {
+                                    if (currentChildren[i].getAttribute("timestamp") > ts) {
+                                        document.querySelector(".messageArea").insertChildAtIndex(x.firstChild, i)
+                                        break;
+                                    }
                                 }
- 
                             }
 
-                            
                         }
                     }//create done
-
                     currentChildren = Array.from(document.querySelector(".messageArea").children)
-                    for(index in currentChildren){
+                    for (index in currentChildren) {
                         let y = msgs.find(msg => msg._id == currentChildren[index].id)
                         let t = Array.from(currentChildren[index].childNodes).find(c => c.className.includes("text"));
-
-                        if(`${y.content}${y.edited==true?`<small class="edit">(edited)</small>`:""}` !==t.innerHTML && !currentChildren[index].className.includes("editing")){
+                        if (`${y.content}${y.edited == true ? `<small class="edit">(edited)</small>` : ""}` !== t.innerHTML && !currentChildren[index].className.includes("editing")) {
                             currentChildren[index].outerHTML = await msgs[index].render(false)
                         }
                     }//editing done
 
-                  
                     quickload.cache(`channel-html-${selectedChannel}`, document.querySelector(".channelArea >.messageArea").innerHTML)
                 }
             }
@@ -468,7 +457,7 @@
 
         async function loadUsersList() {
             let id = selectedServer
-            if(id==-1)return
+            if (id == -1) return
             let temp = await fetch(`https://lq.litdevs.org/v1/quark/${id}`, {
                 method: "GET",
                 headers: {
@@ -739,14 +728,14 @@
 
         }
 
-        Element.prototype.insertChildAtIndex = function(child, index) {
-  if (!index) index = 0
-  if (index >= this.children.length) {
-    this.appendChild(child)
-  } else {
-    this.insertBefore(child, this.children[index])
-  }
-}
+        Element.prototype.insertChildAtIndex = function (child, index) {
+            if (!index) index = 0
+            if (index >= this.children.length) {
+                this.appendChild(child)
+            } else {
+                this.insertBefore(child, this.children[index])
+            }
+        }
     </script>
 </head>
 
