@@ -231,16 +231,27 @@
 
                     ids = currentChildren.map(child => child.id)
                     currentChildren = Array.from(document.querySelector(".messageArea").children)
+
                     for(index in msgs){
                         if(!ids.includes(msgs[index]._id)){
-                            let x = document.createElement("div")
+                            var x = document.createElement("div")
                             x.innerHTML = await msgs[index].render(false)
                             let indexOfChild = 999
+                            
+
+                            if(currentChildren.length == 0)document.querySelector(".messageArea").appendChild(x.firstChild)
                             for(index in currentChildren){
-                                if(currentChildren[index].getAttribute("timestamp") < msgs[index].timestamp)document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,index)
+                                if(x.firstChild == null)break;
+                                if(currentChildren[index].getAttribute("timestamp")  > msgs[index].timestamp){
+                                    document.querySelector(".messageArea").prepend(x.firstChild)
+                                }
+                                else if(currentChildren[index].getAttribute("timestamp") < msgs[index].timestamp){
+                                    document.querySelector(".messageArea").insertChildAtIndex(x.firstChild,index)
+                                }
+ 
                             }
 
-                            document.querySelector(".messageArea").appendChild(x.firstChild)
+                            
                         }
                     }//create done
 

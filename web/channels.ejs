@@ -141,6 +141,8 @@
         if (e.path[0].className != "text" && e.path[0].className != "new") document.querySelector(".messageInput").focus()
     }
     document.querySelector(".channelArea >.messageArea").onscroll = async function (e) {
+        let heightOld = document.querySelector(".channelArea >.messageArea").scrollHeight
+
         var st = window.pageYOffset || document.documentElement.scrollTop;
         if (document.querySelector(".channelArea >.messageArea").scrollTop == 0) {
             let x;
@@ -151,7 +153,11 @@
                 x = Date.now() - 1000 * 60
             }
             //await loadChannelMesages(selectedChannel, x)
-            //currentChannel.render()
+            //await currentChannel.render()
+            let heightNew = document.querySelector(".channelArea >.messageArea").scrollHeight
+            console.log(heightNew,heightOld)
+            document.querySelector(".channelArea >.messageArea").scrollTo(0,heightNew-heightOld)
+
         }
         if (st > lastScrollTop) {
             scrollLock = true;
