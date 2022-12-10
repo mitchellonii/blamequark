@@ -107,7 +107,6 @@
                 }
 
                 this.render = async (join) => {
-                    if (this.channelId != selectedChannel) return ""
                     // this.author = getUser(this.authorId)
                     let ua;
                     try {
@@ -217,7 +216,8 @@
                     this.messages = filtered;
                 }
                 this.render = async () => {
-                    if (this.inactive) return;
+
+                    if (this.messages.length == 0) return;
 
                     let currentChildren = Array.from(document.querySelector(".messageArea").children)
                     let msgs = Array.from(this.messages)
@@ -230,10 +230,9 @@
                     ids = currentChildren.map(child => child.id)
                     for (let index = 0; index < msgs.length; index++) {
                         if (!ids.includes(msgs[index]._id)) {
-
                             var x = document.createElement("div")
                             let join = false
-                            if (msgs[index - 1] != undefined && msgs[index - 1].authorId == msgs[index].authorId) join = true;
+                            if (msgs[index - 1] != undefined && msgs[index - 1].authorId == msgs[index].authorId && msgs[index].timestamp - msgs[index - 1].timestamp < 1000 * 60 * 5) join = true;
                             x.innerHTML = await msgs[index].render(join)
                             let ts = x.firstChild.getAttribute("timestamp")
                             if (currentChildren.length == 0) document.querySelector(".messageArea").appendChild(x.firstChild)
@@ -259,7 +258,9 @@
                         let y = msgs.find(msg => msg._id == currentChildren[index].id)
                         let t = Array.from(currentChildren[index].childNodes).find(c => c.className.includes("text"));
                         if (`${y.content}${y.edited == true ? `<small class="edit">(edited)</small>` : ""}` !== t.innerHTML && !currentChildren[index].className.includes("editing")) {
-                            currentChildren[index].outerHTML = await msgs[index].render(false)
+                            let join = false
+                            if (msgs[index - 1] != undefined && msgs[index - 1].authorId == msgs[index].authorId && msgs[index].timestamp - msgs[index - 1].timestamp < 1000 * 60 * 5) join = true;
+                            currentChildren[index].outerHTML = await msgs[index].render(join)
                         }
                     }//editing done
 
@@ -360,7 +361,7 @@
             t.classList.add("selected")
             let id = t.id
             selectedServer = id
-            loadServer(id)
+            loadServer(id, true)
         }
 
         async function loadServer(quarkId, refresh = true) {
@@ -427,15 +428,16 @@
         }
         async function loadChannel(channelID) {
             currentChannel.inactive = true;
-            delete currentChannel
+            currentChannel = undefined
             subscribeChannel(channelID)
-            loadChannelMesages(channelID)
             document.querySelector(".channelHeader>.name").innerText = "Loading..."
             document.querySelector(".channelHeader>.desc").innerText = "Loading..."
-            document.querySelector(".channelHeader>.delButton").id = channelID
+            document.querySelector(".channelHeader>.delButton").id = channelID;
             var cache = JSON.parse(window.sessionStorage.getItem("quickloadCache"));
             if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}`] != undefined) {
                 currentChannel = new Channel(cache[`https://lq.litdevs.org/v1/channel/${channelID}`])
+                loadChannelMesages(channelID)
+
                 document.querySelector(".channelHeader>.name").innerText = cache[`https://lq.litdevs.org/v1/channel/${channelID}`].name
                 document.querySelector(".channelHeader>.desc").innerText = cache[`https://lq.litdevs.org/v1/channel/${channelID}`].description
             }
@@ -450,9 +452,9 @@
             if (selectedChannel != channelID) return
             document.querySelector(".channelHeader>.name").innerText = y.response.channel.name
             document.querySelector(".channelHeader>.desc").innerText = y.response.channel.description
-            currentChannel = new Channel(y.response.channel)
-            getServers()
-            initial()
+            if (currentChannel == undefined) currentChannel = new Channel(y.response.channel)
+            loadChannelMesages(channelID)
+
         }
 
         async function loadUsersList() {
@@ -520,6 +522,7 @@
         }
 
         async function loadChannelMesages(channelID, startTimestamp = null) {
+
             if (startTimestamp != null) startTimestamp = `?startTimestamp=${startTimestamp}`
             else startTimestamp = ""
             if (channelID == -1) return
@@ -527,19 +530,10 @@
             if (cache != null && cache[`channel-html-${channelID}`] != undefined && document.querySelector(".channelArea >.messageArea").innerHTML != cache[`channel-html-${channelID}`]) {
                 document.querySelector(".channelArea >.messageArea").innerHTML = cache[`channel-html-${channelID}`]
                 if (scrollLock) document.querySelector(".messageArea").scrollTo(0, document.querySelector(".messageArea").scrollHeight)
+            } else if (currentChannel?.messages.length == 0) {
+                document.querySelector(".channelArea >.messageArea").innerHTML = ""
             }
-            if (cache != null && cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`] != undefined) {
-                if (document.querySelector(".channelArea >.messageArea").innerHTML == "") {
-                    let t = []
 
-                    for (index in cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`]) {
-                        let x = new Message(cache[`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`][index])
-                        t.push(x)
-                    }
-                    currentChannel.validate(t)
-                }
-
-            }
             let temp = await fetch(`https://lq.litdevs.org/v1/channel/${channelID}/messages${startTimestamp}`, {
                 method: "GET",
                 headers: {
@@ -550,6 +544,7 @@
 
             if (selectedChannel != channelID) return
             let t = []
+            let ids = currentChannel.messages.map(m => m._id)
             for (index in y.response.messages) {
                 let x = new Message(y.response.messages[index])
                 t.push(x)
